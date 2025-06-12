@@ -24,7 +24,7 @@ RUN bash -c 'echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" > /etc/chrome-
 RUN apt-get install --assume-yes firefox
 # ---------------------------------------------------------- 
 # SPECIFY VARIABLES FOR SETTING UP CHROME REMOTE DESKTOP
-ARG USER=myuser
+ARG USER=crduser
 # use 6 digits at least
 ENV PIN=123456
 ENV CODE=4/xxx
@@ -46,9 +46,9 @@ RUN echo "/usr/bin/pulseaudio --start" > .chrome-remote-desktop-session
 RUN echo "startxfce4 :1030" >> .chrome-remote-desktop-session
 CMD \
    DISPLAY= /opt/google/chrome-remote-desktop/start-host --code=$CODE --redirect-url="https://remotedesktop.google.com/_/oauthredirect" --name=$HOSTNAME --pin=$PIN ; \
-   HOST_HASH=$(echo -n $HOSTNAME | md5sum | cut -c -32) && \
+   HOST_HASH=$(python3 -c "import hashlib,socket; print(hashlib.md5(socket.gethostname().encode()).hexdigest())") && \
    FILENAME=.config/chrome-remote-desktop/host#${HOST_HASH}.json && echo $FILENAME && \
-   cp .config/chrome-remote-desktop/host#*.json $FILENAME ; \
+   mv .config/chrome-remote-desktop/host#*.json $FILENAME ; \
    sudo service chrome-remote-desktop stop && \
    sudo service chrome-remote-desktop start && \
    echo $HOSTNAME && \
