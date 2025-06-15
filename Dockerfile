@@ -1,6 +1,12 @@
-FROM ubuntu:focal
+FROM ubuntu:noble
 
 ENV DEBIAN_FRONTEND=noninteractive
+
+# INSTALL FIREFOX AS A DEB AND NOT SNAP
+COPY res/mozilla.preference.d /etc/apt/preferences.d/mozilla
+COPY res/mozilla.list /etc/apt/sources.list.d/mozilla.list
+COPY res/papirus-ubuntu-papirus-noble.sources /etc/apt/sources.list.d/papirus-ubuntu-papirus-noble.sources
+COPY res/packages.mozilla.org.asc /etc/apt/keyrings/packages.mozilla.org.asc
 
 # INSTALL SOURCES FOR CHROME REMOTE DESKTOP AND VSCODE
 RUN apt-get update && apt-get upgrade --assume-yes
@@ -14,7 +20,8 @@ RUN sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable 
 # INSTALL XFCE DESKTOP AND DEPENDENCIES
 RUN apt-get update && apt-get upgrade --assume-yes
 RUN apt-get install --assume-yes --fix-missing sudo wget apt-utils xvfb xfce4 xbase-clients \
-    desktop-base vim xscreensaver google-chrome-stable python-psutil psmisc python3-psutil xserver-xorg-video-dummy ffmpeg dialog python3-xdg python3-packaging
+    desktop-base vim xscreensaver google-chrome-stable psmisc xserver-xorg-video-dummy ffmpeg dialog python3-xdg \
+    python3-packaging python3-psutil dbus-x11 papirus-icon-theme
 RUN apt-get install libutempter0
 RUN wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
 RUN dpkg --install chrome-remote-desktop_current_amd64.deb
@@ -24,26 +31,26 @@ RUN bash -c 'echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" > /etc/chrome-
 RUN apt-get install --assume-yes firefox
 # ---------------------------------------------------------- 
 # SPECIFY VARIABLES FOR SETTING UP CHROME REMOTE DESKTOP
-ARG USER=crduser
+#ARG USER=crduser
 # use 6 digits at least
 ENV PIN=123456
 ENV CODE=4/xxx
 ENV HOSTNAME=myvirtualdesktop
 # ---------------------------------------------------------- 
 # ADD USER TO THE SPECIFIED GROUPS
-RUN adduser --disabled-password --gecos '' $USER
-RUN mkhomedir_helper $USER
-RUN adduser $USER sudo
+RUN adduser --disabled-password --gecos '' crduser
+RUN mkhomedir_helper crduser
+RUN adduser crduser sudo
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
-RUN usermod -aG chrome-remote-desktop $USER
-USER $USER
-WORKDIR /home/$USER
-RUN mkdir -p .config/chrome-remote-desktop
-RUN chown "$USER:$USER" .config/chrome-remote-desktop
-RUN chmod a+rx .config/chrome-remote-desktop
-RUN touch .config/chrome-remote-desktop/host.json
+RUN usermod -aG chrome-remote-desktop crduser 
+USER crduser
+WORKDIR /home/crduser
+RUN sudo mkdir -p .config/chrome-remote-desktop
+RUN sudo mkdir .config/chrome-remote-desktop/crashpad
+RUN sudo chmod a+rx .config/chrome-remote-desktop
 RUN echo "/usr/bin/pulseaudio --start" > .chrome-remote-desktop-session
 RUN echo "startxfce4 :1030" >> .chrome-remote-desktop-session
+RUN sudo chown -R crduser:crduser /home/crduser
 CMD \
    DISPLAY= /opt/google/chrome-remote-desktop/start-host --code=$CODE --redirect-url="https://remotedesktop.google.com/_/oauthredirect" --name=$HOSTNAME --pin=$PIN ; \
    HOST_HASH=$(python3 -c "import hashlib,socket; print(hashlib.md5(socket.gethostname().encode()).hexdigest())") && \
