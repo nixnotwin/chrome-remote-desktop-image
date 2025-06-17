@@ -31,26 +31,27 @@ RUN bash -c 'echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" > /etc/chrome-
 RUN apt-get install --assume-yes firefox
 # ---------------------------------------------------------- 
 # SPECIFY VARIABLES FOR SETTING UP CHROME REMOTE DESKTOP
-#ARG USER=crduser
+ARG USER=crduser
 # use 6 digits at least
 ENV PIN=123456
 ENV CODE=4/xxx
 ENV HOSTNAME=myvirtualdesktop
 # ---------------------------------------------------------- 
 # ADD USER TO THE SPECIFIED GROUPS
-RUN adduser --disabled-password --gecos '' crduser
-RUN mkhomedir_helper crduser
-RUN adduser crduser sudo
+RUN adduser --disabled-password --gecos '' $USER
+RUN mkhomedir_helper $USER
+RUN adduser $USER sudo
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
-RUN usermod -aG chrome-remote-desktop crduser 
-USER crduser
-WORKDIR /home/crduser
-RUN sudo mkdir -p .config/chrome-remote-desktop
-RUN sudo mkdir .config/chrome-remote-desktop/crashpad
-RUN sudo chmod a+rx .config/chrome-remote-desktop
+RUN usermod -aG chrome-remote-desktop $USER 
+USER $USER
+WORKDIR /home/$USER
+RUN mkdir -p .config/chrome-remote-desktop
+RUN mkdir .config/chrome-remote-desktop/crashpad
+RUN chmod a+rx .config/chrome-remote-desktop
+#RUN touch .config/chrome-remote-desktop/host.json
 RUN echo "/usr/bin/pulseaudio --start" > .chrome-remote-desktop-session
 RUN echo "startxfce4 :1030" >> .chrome-remote-desktop-session
-RUN sudo chown -R crduser:crduser /home/crduser
+RUN sudo chown -R $USER:$USER /home/$USER
 CMD \
    DISPLAY= /opt/google/chrome-remote-desktop/start-host --code=$CODE --redirect-url="https://remotedesktop.google.com/_/oauthredirect" --name=$HOSTNAME --pin=$PIN ; \
    HOST_HASH=$(python3 -c "import hashlib,socket; print(hashlib.md5(socket.gethostname().encode()).hexdigest())") && \
@@ -60,3 +61,4 @@ CMD \
    sudo service chrome-remote-desktop start && \
    echo $HOSTNAME && \
    sleep infinity & wait
+
