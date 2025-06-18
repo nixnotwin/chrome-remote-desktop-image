@@ -2,12 +2,6 @@ FROM ubuntu:noble
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# INSTALL FIREFOX AS A DEB AND NOT SNAP
-COPY res/mozilla.preference.d /etc/apt/preferences.d/mozilla
-COPY res/mozilla.list /etc/apt/sources.list.d/mozilla.list
-COPY res/papirus-ubuntu-papirus-noble.sources /etc/apt/sources.list.d/papirus-ubuntu-papirus-noble.sources
-COPY res/packages.mozilla.org.asc /etc/apt/keyrings/packages.mozilla.org.asc
-
 # INSTALL SOURCES FOR CHROME REMOTE DESKTOP AND VSCODE
 RUN apt-get update && apt-get upgrade --assume-yes
 RUN apt-get --assume-yes install curl gpg wget
@@ -17,6 +11,23 @@ RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add
 RUN echo "deb [arch=amd64] http://packages.microsoft.com/repos/vscode stable main" | \
    tee /etc/apt/sources.list.d/vs-code.list
 RUN sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
+
+# INSTALL FIREFOX AS A DEB AND NOT SNAP
+RUN mkdir -p /etc/apt/keyrings
+RUN wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- | tee /etc/apt/keyrings/packages.mozilla.org.asc > /dev/null
+RUN echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main" | tee /etc/apt/sources.list.d/mozilla.list > /dev/null
+RUN echo "Package: firefox*" > /etc/apt/preferences.d/mozilla
+RUN echo "Pin: origin packages.mozilla.org" >> /etc/apt/preferences.d/mozilla
+RUN echo "Pin-Priority: 1001" >> /etc/apt/preferences.d/mozilla
+RUN echo "" >> /etc/apt/preferences.d/mozilla
+RUN echo "Package: firefox*" >> /etc/apt/preferences.d/mozilla
+RUN echo "Pin: release o=Ubuntu" >> /etc/apt/preferences.d/mozilla
+RUN echo "Pin-Priority: -1" >> /etc/apt/preferences.d/mozilla
+
+# ADD PAPIRUS REPO
+RUN echo "deb http://ppa.launchpad.net/papirus/papirus/ubuntu jammy main" > /etc/apt/sources.list.d/papirus-ppa.list
+RUN wget -qO /etc/apt/trusted.gpg.d/papirus-ppa.asc "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x9461999446FAF0DF770BFC9AE58A9D36647CAE7F"
+
 # INSTALL XFCE DESKTOP AND DEPENDENCIES
 RUN apt-get update && apt-get upgrade --assume-yes
 RUN apt-get install --assume-yes --fix-missing sudo wget apt-utils xvfb xfce4 xbase-clients \
