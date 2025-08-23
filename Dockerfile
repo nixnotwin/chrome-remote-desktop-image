@@ -34,12 +34,13 @@ RUN apt-get install --assume-yes --fix-missing sudo wget apt-utils xvfb xfce4 xb
     desktop-base vim xscreensaver google-chrome-stable psmisc xserver-xorg-video-dummy ffmpeg dialog python3-xdg \
     python3-packaging python3-psutil dbus-x11 papirus-icon-theme
 RUN apt-get install libutempter0
+RUN apt-get install gvfs-backends
 RUN wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
 RUN dpkg --install chrome-remote-desktop_current_amd64.deb
 RUN apt-get install --assume-yes --fix-broken
 RUN bash -c 'echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" > /etc/chrome-remote-desktop-session'
 
-RUN apt-get install --assume-yes firefox
+RUN apt-get install --assume-yes firefox fonts-indic
 # ---------------------------------------------------------- 
 # SPECIFY VARIABLES FOR SETTING UP CHROME REMOTE DESKTOP
 ARG USER=crduser
