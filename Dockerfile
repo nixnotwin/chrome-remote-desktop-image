@@ -2,14 +2,10 @@ FROM ubuntu:noble
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# INSTALL SOURCES FOR CHROME REMOTE DESKTOP AND VSCODE
+# INSTALL SOURCES FOR CHROME REMOTE DESKTOP
 RUN apt-get update && apt-get upgrade --assume-yes
 RUN apt-get --assume-yes install curl gpg wget
-RUN curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg && \
-    mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg
 RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
-RUN echo "deb [arch=amd64] http://packages.microsoft.com/repos/vscode stable main" | \
-   tee /etc/apt/sources.list.d/vs-code.list
 RUN sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
 
 # INSTALL FIREFOX AS A DEB AND NOT SNAP
@@ -24,23 +20,22 @@ RUN echo "Package: firefox*" >> /etc/apt/preferences.d/mozilla
 RUN echo "Pin: release o=Ubuntu" >> /etc/apt/preferences.d/mozilla
 RUN echo "Pin-Priority: -1" >> /etc/apt/preferences.d/mozilla
 
-# ADD PAPIRUS REPO
-RUN echo "deb http://ppa.launchpad.net/papirus/papirus/ubuntu jammy main" > /etc/apt/sources.list.d/papirus-ppa.list
-RUN wget -qO /etc/apt/trusted.gpg.d/papirus-ppa.asc "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x9461999446FAF0DF770BFC9AE58A9D36647CAE7F"
-
 # INSTALL XFCE DESKTOP AND DEPENDENCIES
 RUN apt-get update && apt-get upgrade --assume-yes
-RUN apt-get install --assume-yes --fix-missing sudo wget apt-utils xvfb xfce4 xbase-clients \
-    desktop-base vim xscreensaver google-chrome-stable psmisc xserver-xorg-video-dummy ffmpeg dialog python3-xdg \
-    python3-packaging python3-psutil dbus-x11 papirus-icon-theme
-RUN apt-get install libutempter0
-RUN apt-get install gvfs-backends
+RUN apt-get update && apt-get upgrade --assume-yes && \
+    apt-get install --assume-yes --no-install-recommends --fix-missing \
+    sudo wget apt-utils \
+    xvfb xserver-xorg-video-dummy \
+    xfce4-session xfdesktop4 xfce4-panel xfce4-settings-manager \
+    dbus-x11 google-chrome-stable leafpad \
+    psmisc dialog python3-xdg python3-packaging python3-psutil
 RUN wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
 RUN dpkg --install chrome-remote-desktop_current_amd64.deb
+RUN rm -f chrome-remote-desktop_current_amd64.deb
 RUN apt-get install --assume-yes --fix-broken
 RUN bash -c 'echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" > /etc/chrome-remote-desktop-session'
 
-RUN apt-get install --assume-yes firefox fonts-indic
+RUN apt-get install --assume-yes firefox fonts-knda fonts-deva
 # ---------------------------------------------------------- 
 # SPECIFY VARIABLES FOR SETTING UP CHROME REMOTE DESKTOP
 ARG USER=crduser
@@ -64,6 +59,8 @@ RUN chmod a+rx .config/chrome-remote-desktop
 RUN echo "/usr/bin/pulseaudio --start" > .chrome-remote-desktop-session
 RUN echo "startxfce4 :1030" >> .chrome-remote-desktop-session
 RUN sudo chown -R $USER:$USER /home/$USER
+# volume
+VOLUME /home/$USER
 CMD \
    DISPLAY= /opt/google/chrome-remote-desktop/start-host --code=$CODE --redirect-url="https://remotedesktop.google.com/_/oauthredirect" --name=$HOSTNAME --pin=$PIN ; \
    HOST_HASH=$(python3 -c "import hashlib,socket; print(hashlib.md5(socket.gethostname().encode()).hexdigest())") && \
